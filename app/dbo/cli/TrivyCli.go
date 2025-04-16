@@ -33,9 +33,9 @@ func (t *TrivyCli) Init() *TrivyCli {
 
 func (t *TrivyCli) AddFileSystemArgument(commandSkip string) *TrivyCli {
 	if commandSkip != "" {
-		t.command += " fs " + commandSkip
+		t.command += " fs " + commandSkip + " --debug"
 	} else {
-		t.command += " fs"
+		t.command += " fs --debug"
 	}
 	return t
 }
@@ -53,7 +53,7 @@ func (t *TrivyCli) AddSeverityArgument(value string) *TrivyCli {
 }
 
 func (t *TrivyCli) AddSecurityCheckArgument(value string) *TrivyCli {
-	t.command += " --security-check " + value
+	t.command += " --security-checks " + value
 	return t
 }
 
@@ -78,12 +78,21 @@ func (t *TrivyCli) AddProjectPath(value string) *TrivyCli {
 }
 
 func (t *TrivyCli) Exec(repositoryFilePath string) ([]byte, error) {
-	cmd := exec.Command("bash", "-c", t.command)
-	cmd.Dir = repositoryFilePath
-	cmd.Stdin = os.Stdin
-	out, err := cmd.CombinedOutput()
+	t.stdLog.InfoFunction("Executing command: " + t.command)
 
-	return out, err
+	cmd := exec.Command("bash", "-c", t.command)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Run(); err != nil {
+		// Kalau Trivy return exit code > 0, tetap tampilkan error-nya
+		println("Error:", err.Error())
+	}
+	//cmd.Dir = repositoryFilePath
+	//cmd.Stdin = os.Stdin
+	//out, err := cmd.CombinedOutput()
+
+	return nil, nil
 }
 
 func (t *TrivyCli) DownloadTrivyDb() bool {

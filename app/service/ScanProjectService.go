@@ -47,9 +47,9 @@ func (p ProjectServiceImpl) preparingProjectPath(ctx *gin.Context, project entit
 	// Example Result of Project Path => /_project-repository/workspace/test_project-sca
 	RepositoryPath := fmt.Sprintf("%s/_project-repository/workspace/", curDir)
 	projectPath := fmt.Sprintf("%s%s", RepositoryPath, project.Key)
-	if stage == "sca" {
-		projectPath = fmt.Sprintf("%s-sca", projectPath)
-	}
+	//if stage == "sca" {
+	//	projectPath = fmt.Sprintf("%s-sca", projectPath)
+	//}
 
 	// Example Result of Scanned Project File Path => /_scanned-project-files/scan_repo_file_test_project_repository-.json
 	ProjectFilePath := fmt.Sprintf("%s/_scanned-project-files/", curDir)
@@ -89,6 +89,8 @@ func (p ProjectServiceImpl) prepareRunScanAndAction(ctx *gin.Context, project en
 
 	if err != nil {
 		outPutCommand := fmt.Sprintf("%q\n", out)
+		p.stdLog.InfoFunction("Error scan command: " + outPutCommand)
+
 		var succesDownloadDB bool
 		if strings.Contains(outPutCommand, "--skip-update cannot be specified on the first run") {
 			succesDownloadDB = p.trivyCli.DownloadTrivyDb()
@@ -98,6 +100,7 @@ func (p ProjectServiceImpl) prepareRunScanAndAction(ctx *gin.Context, project en
 		}
 		p.checkErrorScan(ctx, project, err)
 	}
+	p.stdLog.InfoFunction("Success scan command: " + fmt.Sprintf("%q\n", out))
 
 	return projectOptionData
 }

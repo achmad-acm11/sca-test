@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"sca-integrator/app/exception"
@@ -18,6 +19,7 @@ func ErrorHandler() gin.HandlerFunc {
 				case exception.InternalServerError:
 					errType = err.(exception.InternalServerError)
 					code = http.StatusInternalServerError
+					fmt.Printf("%s %+v \n", code, errType)
 				case exception.NotFoundError:
 					errType = err.(exception.NotFoundError)
 					code = http.StatusNotFound

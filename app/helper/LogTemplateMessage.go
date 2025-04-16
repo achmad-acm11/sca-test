@@ -38,7 +38,7 @@ func (log *StandartLog) WarningFunction(message interface{}) {
 
 func (log *StandartLog) InfoFunction(message interface{}) {
 	if gin.Mode() != gin.TestMode {
-		shareVar.Logger.WithField("message", message).Info(fmt.Sprintf("Warning %s %s %s", log.TypeLayer, log.Name, log.NameFunc))
+		shareVar.Logger.WithField("message", message).Info(fmt.Sprintf("Info %s %s %s", log.TypeLayer, log.Name, log.NameFunc))
 	}
 }
 

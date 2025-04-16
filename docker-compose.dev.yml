@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  sca-integration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sca-integration
+    restart: always
+    ports:
+      - '8082:8082'
+    volumes:
+      - "../workspace:/root/_project-repository/workspace:rw"
+      - "../_scanned-project-files:/root/_scanned-project-files"
+      - "../sca-service-project-files:/root/_project-repository-file"
+      - "../cache_data_sca:/root/.cache/"
+    environment:
+        APP_ENV: "development"
+        DB_HOST: postgres
+        DB_USER: sonar
+        DB_PASSWORD: "sonar"
+        DB_PORT: 5432
+        DB_NAME: "trivy"
+        APP_PORT: "8082"
+        TRIVY_SERVER_URL: "http://trivy:4954"
+        TRIVY_TIMEOUT: "5m"
+    networks:
+      - compose_default
+networks:
+  compose_default:
+    external: true

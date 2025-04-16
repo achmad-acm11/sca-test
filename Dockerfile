@@ -2,8 +2,7 @@ FROM golang:1.21.12-alpine3.20 AS builder
 RUN go env -w GO111MODULE=on
 WORKDIR /sca-integrator
 COPY ./    ./
-RUN go mod tidy
-RUN go mod download
+RUN CGO_ENABLED=0 GOOS=linux go mod vendor
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 FROM alpine:3.20 as trivy-downloader
@@ -25,6 +24,7 @@ ENV ZONEINFO /zoneinfo.zip
 WORKDIR /root/
 COPY --from=builder /sca-integrator ./
 #COPY --from=builder /sca-integrator/_public_key.pem ./
-RUN mkdir "_project-misconfig-file"
+RUN mkdir "_scanned-project-files"
 RUN mkdir "_project-repository"
+RUN mkdir "_project-repository-file"
 CMD ["./main"]
