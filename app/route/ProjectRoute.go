@@ -32,6 +32,7 @@ func ProjectRoute(router *gin.RouterGroup, db *gorm.DB, validate *validator.Vali
 	router.GET("project/:id", projectController.GetDetailByIdHandler)
 	router.POST("project", projectController.CreateProjectHandler)
 	router.POST("project/scan", projectController.ScanProjectHandler)
+	router.POST("sonar-callback", projectController.SonarCallbackHandler)
 	router.PUT("project/:id", projectController.UpdateProjectHandler)
 	router.DELETE("project/:id", projectController.DeleteProjectHandler)
 

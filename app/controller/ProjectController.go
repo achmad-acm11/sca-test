@@ -1,7 +1,10 @@
 package controller
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"io/ioutil"
 	"net/http"
 	"sca-integrator/app/dto/request"
 	"sca-integrator/app/helper"
@@ -44,6 +47,19 @@ func (p *ProjectController) ScanProjectHandler(ctx *gin.Context) {
 	p.service.ScanProjectData(ctx, request)
 
 	ctx.JSON(http.StatusOK, shareVar.PROJECT_SCAN_STARTED)
+}
+
+func (p *ProjectController) SonarCallbackHandler(ctx *gin.Context) {
+	bodyBytes, err := ioutil.ReadAll(ctx.Request.Body)
+	if err != nil {
+		fmt.Println("Error reading body:", err)
+		return
+	}
+	fmt.Printf("Request JSON: %s\n", string(bodyBytes))
+
+	ctx.Request.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	ctx.JSON(http.StatusOK, "Sonar Callback Success")
 }
 
 func (p *ProjectController) CreateProjectHandler(ctx *gin.Context) {
