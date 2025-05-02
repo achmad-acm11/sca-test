@@ -7,6 +7,8 @@ type CreateProjectRequest struct {
 	Url         string `validate:"required" json:"url"`
 	Branch_name string `validate:"required" json:"branch_name"`
 	Visibility  string `validate:"required,oneof=PUBLIC PRIVATE'" json:"visibility"`
+	Username    string `json:"username"`
+	Token       string `json:"token"`
 }
 
 type UpdateProjectRequest struct {

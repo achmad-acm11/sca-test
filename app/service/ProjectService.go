@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
+	"os"
 	"sca-integrator/app/dbo/cli"
 	"sca-integrator/app/dbo/entity"
 	"sca-integrator/app/dbo/repository"
@@ -20,39 +21,49 @@ type ProjectService interface {
 	GetAllData(ctx *gin.Context) []response.ProjectResponse
 	GetDetailByIdData(ctx *gin.Context, id int) response.ProjectResponse
 	ScanProjectData(ctx *gin.Context, request request.ProjectScanRequest)
-	CreateProjectData(ctx *gin.Context, request request.CreateProjectRequest) response.ProjectResponse
+	CreateProjectData(ctx *gin.Context, req request.CreateProjectRequest) response.ProjectResponse
 	UpdateProjectData(ctx *gin.Context, request request.UpdateProjectRequest, id int) response.ProjectResponse
 	DeleteProjectData(ctx *gin.Context, id int)
 }
 
 type ProjectServiceImpl struct {
-	repo          repository.ProjectRepository
-	repoOption    project.FilterOptionRepository
-	repoExclusion project.ExclusionRepository
-	repoResult    repository.ResultRepository
-	trivyCli      *cli.TrivyCli
-	validator     *validator.Validate
-	db            *gorm.DB
-	stdLog        *helper.StandartLog
+	repo                repository.ProjectRepository
+	repoOption          project.FilterOptionRepository
+	repoExclusion       project.ExclusionRepository
+	repoResult          repository.ResultRepository
+	repoAuth            project.AuthRepository
+	trivyCli            *cli.TrivyCli
+	gitCliService       GitCliService
+	validator           *validator.Validate
+	db                  *gorm.DB
+	stdLog              *helper.StandartLog
+	prefixProjectFolder string
+	prefixResultFolder  string
 }
 
 func NewProjectService(repo repository.ProjectRepository,
 	repoOption project.FilterOptionRepository,
 	repoExclusion project.ExclusionRepository,
 	repoResult repository.ResultRepository,
+	repoAuth project.AuthRepository,
 	trivyCli *cli.TrivyCli,
+	gitCliService GitCliService,
 	validate *validator.Validate,
 	db *gorm.DB) *ProjectServiceImpl {
 
 	return &ProjectServiceImpl{
-		repo:          repo,
-		repoOption:    repoOption,
-		repoExclusion: repoExclusion,
-		repoResult:    repoResult,
-		trivyCli:      trivyCli,
-		validator:     validate,
-		db:            db,
-		stdLog:        helper.NewStandardLog(shareVar.Project, shareVar.Service),
+		repo:                repo,
+		repoOption:          repoOption,
+		repoExclusion:       repoExclusion,
+		repoResult:          repoResult,
+		repoAuth:            repoAuth,
+		trivyCli:            trivyCli,
+		gitCliService:       gitCliService,
+		validator:           validate,
+		db:                  db,
+		stdLog:              helper.NewStandardLog(shareVar.Project, shareVar.Service),
+		prefixProjectFolder: os.Getenv("PREFIX_PROJECT_FOLDER"),
+		prefixResultFolder:  os.Getenv("PREFIX_RESULT_FOLDER"),
 	}
 }
 
@@ -68,29 +79,46 @@ func (p ProjectServiceImpl) GetDetailByIdData(ctx *gin.Context, id int) response
 	return response.NewProjectResponseBuilder().Default(project).Result()
 }
 
-func (p ProjectServiceImpl) CreateProjectData(ctx *gin.Context, request request.CreateProjectRequest) response.ProjectResponse {
+func (p ProjectServiceImpl) CreateProjectData(ctx *gin.Context, req request.CreateProjectRequest) response.ProjectResponse {
 	p.stdLog.NameFunc = "CreateProjectData"
-	p.stdLog.StartFunction(request)
+	p.stdLog.StartFunction(req)
 
-	err := p.validator.Struct(request)
+	err := p.validator.Struct(req)
 	helper.ErrorHandlerValidator(err)
 
 	tx := p.db.Begin()
 	defer helper.CommitOrRollback(tx)
 
 	project := p.repo.Create(ctx, tx, entity.Project{
-		Key:         helper.ToSnakeCase(request.Name),
-		Name:        request.Name,
-		Description: request.Description,
-		RepoType:    request.Repo_type,
-		Url:         request.Url,
-		BranchName:  request.Branch_name,
-		Visibility:  request.Visibility,
+		Key:         helper.ToSnakeCase(req.Name),
+		Name:        req.Name,
+		Description: req.Description,
+		RepoType:    req.Repo_type,
+		Url:         req.Url,
+		BranchName:  req.Branch_name,
+		Visibility:  req.Visibility,
 	})
+
+	if project.Visibility == "PRIVATE" {
+		projectAuth := entity.ProjectAuth{
+			ProjectId: project.Id,
+			Username:  req.Username,
+			Token:     req.Token,
+		}
+		p.repoAuth.Create(ctx, tx, projectAuth)
+	}
 
 	p.stdLog.NameFunc = "CreateProjectData"
 	p.stdLog.EndFunction(project)
 
+	go p.gitCliService.RunCloneRepo(request.GitCloneRequest{
+		RepoUrl:    project.Url,
+		BranchName: project.BranchName,
+		RepoName:   project.Key,
+		Visibility: project.Visibility,
+		Username:   req.Username,
+		Token:      req.Token,
+	})
 	return response.NewProjectResponseBuilder().Default(project).Result()
 }
 
@@ -140,7 +168,7 @@ func (p ProjectServiceImpl) ScanProjectData(ctx *gin.Context, request request.Pr
 
 	switch request.ScanType {
 	case "repository":
-		go p.scanningRepository(ctx, project, request.Stage)
+		go p.scanningRepository(ctx, project)
 	case "image":
 		panic(exception.NewNotImplementedError(errors.New(shareVar.NOT_IMPLEMENTED).Error()))
 	default:

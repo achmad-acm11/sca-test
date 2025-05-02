@@ -11,18 +11,19 @@ services:
     volumes:
       - "../workspace:/root/_project-repository/workspace:rw"
       - "../_scanned-project-files:/root/_scanned-project-files"
-      - "../sca-service-project-files:/root/_project-repository-file"
       - "../cache_data_sca:/root/.cache/"
     environment:
         APP_ENV: "development"
-        DB_HOST: postgres
-        DB_USER: sonar
-        DB_PASSWORD: "sonar"
+        DB_HOST: postgresdb
+        DB_USER: what
+        DB_PASSWORD: "what1234"
         DB_PORT: 5432
         DB_NAME: "trivy"
         APP_PORT: "8082"
         TRIVY_SERVER_URL: "http://trivy:4954"
         TRIVY_TIMEOUT: "5m"
+        PREFIX_PROJECT_FOLDER: "/_project-repository/workspace/"
+        PREFIX_RESULT_FOLDER: "/_scanned-project-files/"
     networks:
       - compose_default
 networks:

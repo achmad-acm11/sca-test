@@ -16,13 +16,18 @@ func ProjectRoute(router *gin.RouterGroup, db *gorm.DB, validate *validator.Vali
 	exclusionRepository := project.NewExclusionRepository()
 	optionRepository := project.NewFilterOptionRepository()
 	resultRepository := repository.NewResultRepository()
+	projectAuthRepository := project.NewAuthRepository()
 	trivyCli := cli.NewTrivyCli()
+	gitCli := cli.NewGitCli()
 
+	gitCliService := service.NewGitCliService(gitCli)
 	projectService := service.NewProjectService(projectRepository,
 		optionRepository,
 		exclusionRepository,
 		resultRepository,
+		projectAuthRepository,
 		trivyCli,
+		gitCliService,
 		validate,
 		db)
 

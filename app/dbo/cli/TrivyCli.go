@@ -77,22 +77,21 @@ func (t *TrivyCli) AddProjectPath(value string) *TrivyCli {
 	return t
 }
 
-func (t *TrivyCli) Exec(repositoryFilePath string) ([]byte, error) {
+func (t *TrivyCli) Exec() ([]byte, error) {
 	t.stdLog.InfoFunction("Executing command: " + t.command)
 
 	cmd := exec.Command("bash", "-c", t.command)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	//cmd.Stdout = os.Stdout
+	//cmd.Stderr = os.Stderr
+	//
+	//if err := cmd.Run(); err != nil {
+	//	// Kalau Trivy return exit code > 0, tetap tampilkan error-nya
+	//	println("Error:", err.Error())
+	//}
+	cmd.Stdin = os.Stdin
+	return cmd.CombinedOutput()
 
-	if err := cmd.Run(); err != nil {
-		// Kalau Trivy return exit code > 0, tetap tampilkan error-nya
-		println("Error:", err.Error())
-	}
-	//cmd.Dir = repositoryFilePath
-	//cmd.Stdin = os.Stdin
-	//out, err := cmd.CombinedOutput()
-
-	return nil, nil
+	//return nil, nil
 }
 
 func (t *TrivyCli) DownloadTrivyDb() bool {

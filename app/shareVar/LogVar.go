@@ -17,6 +17,7 @@ type NameEntity string
 const (
 	Project  NameEntity = "Project"
 	TrivyCli NameEntity = "TrivyCli"
+	GitCli   NameEntity = "GitCli"
 )
 
 type LogBasicKeyField string
