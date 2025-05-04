@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
@@ -90,7 +91,7 @@ func (p ProjectServiceImpl) CreateProjectData(ctx *gin.Context, req request.Crea
 	defer helper.CommitOrRollback(tx)
 
 	project := p.repo.Create(ctx, tx, entity.Project{
-		Key:         helper.ToSnakeCase(req.Name),
+		Key:         fmt.Sprintf("1_%s_%d", helper.ToSnakeCase(req.Name), helper.Generate4DigitCode()),
 		Name:        req.Name,
 		Description: req.Description,
 		RepoType:    req.Repo_type,
@@ -133,10 +134,6 @@ func (p ProjectServiceImpl) UpdateProjectData(ctx *gin.Context, request request.
 
 	project.Name = request.Name
 	project.Description = request.Description
-	project.RepoType = request.Repo_type
-	project.Url = request.Url
-	project.BranchName = request.Branch_name
-	project.Visibility = request.Visibility
 
 	projectNew := p.repo.Update(ctx, tx, project)
 

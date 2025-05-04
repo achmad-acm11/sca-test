@@ -8,13 +8,14 @@ import (
 type Result struct {
 	Id               int            `gorm:"column:id;type:int;primaryKey;autoIncrement;not null"`
 	ProjectId        int            `gorm:"column:project_id;type:int"`
+	ProjectKey       string         `gorm:"column:project_key;type:varchar(255)"`
 	Rule             string         `gorm:"column:rule;type:varchar(255)"`
 	PrimaryUrl       string         `gorm:"column:primary_url;type:varchar(255)"`
 	TargetFile       string         `gorm:"column:target_file;type:varchar(255)"`
 	ScanType         string         `gorm:"column:scan_type;type:varchar(255)"`
 	PackageName      string         `gorm:"column:package_name;type:varchar(255)"`
-	Title            string         `gorm:"column:title;type:varchar(255)"`
-	Description      string         `gorm:"column:description;type:varchar(255)"`
+	Title            string         `gorm:"column:title;type:text"`
+	Description      string         `gorm:"column:description;type:text"`
 	Severity         string         `gorm:"column:severity;type:varchar(255)"`
 	LastFoundAt      string         `gorm:"column:last_found_at;type:varchar(255)"`
 	StatusResult     int            `gorm:"column:status_result;type:int"`
@@ -25,7 +26,7 @@ type Result struct {
 	CvssV3           string         `gorm:"column:cvss_v3;type:varchar(255)"`
 	InstalledVersion string         `gorm:"column:installed_version;type:varchar(255)"`
 	FixedVersion     string         `gorm:"column:fixed_version;type:varchar(255)"`
-	References       string         `gorm:"column:references;type:varchar(255)"`
+	References       string         `gorm:"column:references;type:text"`
 	PackagesType     string         `gorm:"column:packages_type;type:varchar(255)"`
 	ScanVersion      int            `gorm:"column:scan_version;type:int"`
 	CreatedAt        time.Time      `gorm:"column:created_at;type:timestamp;default:CURRENT_TIMESTAMP;->"`

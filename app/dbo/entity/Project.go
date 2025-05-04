@@ -7,7 +7,7 @@ import (
 
 type Project struct {
 	Id                 int            `gorm:"column:id;type:int;primaryKey;autoIncrement;not null"`
-	Key                string         `gorm:"column:key;type:varchar(255)"`
+	Key                string         `gorm:"column:key;type:varchar(255);primaryKey;not null"`
 	Name               string         `gorm:"column:name;type:varchar(255)"`
 	Description        string         `gorm:"column:description;type:varchar(255)"`
 	RepoType           string         `gorm:"column:repo_type;type:varchar(255)"`

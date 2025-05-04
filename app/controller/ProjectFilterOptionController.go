@@ -26,6 +26,15 @@ func (p *ProjectFilterOptionController) GetAllHandler(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, responses)
 }
 
+func (p *ProjectFilterOptionController) GetAllByProjectHandler(ctx *gin.Context) {
+	projectId, err := strconv.Atoi(ctx.Param("project_id"))
+	helper.ErrorHandlerValidator(err)
+
+	responses := p.service.GetDetailByIdData(ctx, projectId)
+
+	ctx.JSON(http.StatusOK, responses)
+}
+
 func (p *ProjectFilterOptionController) GetDetailByIdHandler(ctx *gin.Context) {
 	optionId, err := strconv.Atoi(ctx.Param("id"))
 	helper.ErrorHandlerValidator(err)
@@ -62,7 +71,10 @@ func (p *ProjectFilterOptionController) DeleteOptionHandler(ctx *gin.Context) {
 	optionId, err := strconv.Atoi(ctx.Param("id"))
 	helper.ErrorHandler(err)
 
-	p.service.DeleteOptionData(ctx, optionId)
+	projectId, err := strconv.Atoi(ctx.Param("projectId"))
+	helper.ErrorHandler(err)
+
+	p.service.DeleteOptionData(ctx, optionId, projectId)
 
 	ctx.JSON(http.StatusOK, shareVar.FILTER_OPTION_DELETED)
 }

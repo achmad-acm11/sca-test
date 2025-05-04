@@ -17,10 +17,11 @@ import (
 
 type ProjectFilterOptionService interface {
 	GetAllData(ctx *gin.Context) []response.ProjectFilterOptionResponse
+	GetAllByProjectData(ctx *gin.Context, projectId int) []response.ProjectFilterOptionResponse
 	GetDetailByIdData(ctx *gin.Context, id int) response.ProjectFilterOptionResponse
 	CreateOptionData(ctx *gin.Context, request request.CreateOptionRequest) response.ProjectFilterOptionResponse
 	UpdateOptionData(ctx *gin.Context, request request.UpdateOptionRequest, id int) response.ProjectFilterOptionResponse
-	DeleteOptionData(ctx *gin.Context, id int)
+	DeleteOptionData(ctx *gin.Context, id int, projectId int)
 }
 
 type ProjectFilterOptionServiceImpl struct {
@@ -45,6 +46,14 @@ func (p ProjectFilterOptionServiceImpl) GetAllData(ctx *gin.Context) []response.
 	return response.NewProjectFilterOptionResponseBuilder().List(options).ListResult()
 }
 
+func (p ProjectFilterOptionServiceImpl) GetAllByProjectData(ctx *gin.Context, projectId int) []response.ProjectFilterOptionResponse {
+	p.GetProjectWithException(ctx, projectId)
+
+	options := p.repo.GetAllByProjectId(ctx, p.db, projectId)
+
+	return response.NewProjectFilterOptionResponseBuilder().List(options).ListResult()
+}
+
 func (p ProjectFilterOptionServiceImpl) GetDetailByIdData(ctx *gin.Context, id int) response.ProjectFilterOptionResponse {
 	option := p.GetOptionWithException(ctx, id)
 
@@ -60,11 +69,15 @@ func (p ProjectFilterOptionServiceImpl) CreateOptionData(ctx *gin.Context, reque
 	tx := p.db.Begin()
 	defer helper.CommitOrRollback(tx)
 
-	option := p.repo.Create(ctx, tx, entity.ProjectFilterOption{
-		ProjectId:  request.Project_id,
-		FilterType: request.Filter_type,
-		Value:      request.Value,
-	})
+	var option entity.ProjectFilterOption
+	switch request.Filter_type {
+	case shareVar.HIDE_UNFIXED_VULN:
+		option = p.AddHideUnfixedVulnerabilitiesOption(ctx, tx, request)
+	case shareVar.SEVERITY_FILTER_TYPE:
+		option = p.AddSeverityOption(ctx, tx, request)
+	case shareVar.VULN_IDS:
+		option = p.AddVulnIDsOption(ctx, tx, request)
+	}
 
 	return response.NewProjectFilterOptionResponseBuilder().Default(option).Result()
 }
@@ -88,7 +101,8 @@ func (p ProjectFilterOptionServiceImpl) UpdateOptionData(ctx *gin.Context, reque
 	return response.NewProjectFilterOptionResponseBuilder().Default(optionNew).Result()
 }
 
-func (p ProjectFilterOptionServiceImpl) DeleteOptionData(ctx *gin.Context, id int) {
+func (p ProjectFilterOptionServiceImpl) DeleteOptionData(ctx *gin.Context, id int, projectId int) {
+	p.GetProjectWithException(ctx, projectId)
 	option := p.GetOptionWithException(ctx, id)
 
 	tx := p.db.Begin()
@@ -110,6 +124,36 @@ func (p ProjectFilterOptionServiceImpl) GetOptionWithException(ctx *gin.Context,
 	if option.Id == 0 {
 		panic(exception.NewNotFoundError(errors.New(shareVar.FILTER_OPTION_NOT_FOUND).Error()))
 	}
+
+	return option
+}
+
+func (p ProjectFilterOptionServiceImpl) AddHideUnfixedVulnerabilitiesOption(ctx *gin.Context, tx *gorm.DB, request request.CreateOptionRequest) entity.ProjectFilterOption {
+	option := p.repo.Create(ctx, tx, entity.ProjectFilterOption{
+		ProjectId:  request.Project_id,
+		FilterType: shareVar.HIDE_UNFIXED_VULN,
+		Value:      "1",
+	})
+
+	return option
+}
+
+func (p ProjectFilterOptionServiceImpl) AddSeverityOption(ctx *gin.Context, tx *gorm.DB, request request.CreateOptionRequest) entity.ProjectFilterOption {
+	option := p.repo.Create(ctx, tx, entity.ProjectFilterOption{
+		ProjectId:  request.Project_id,
+		FilterType: shareVar.SEVERITY_FILTER_TYPE,
+		Value:      request.Value,
+	})
+
+	return option
+}
+
+func (p ProjectFilterOptionServiceImpl) AddVulnIDsOption(ctx *gin.Context, tx *gorm.DB, request request.CreateOptionRequest) entity.ProjectFilterOption {
+	option := p.repo.Create(ctx, tx, entity.ProjectFilterOption{
+		ProjectId:  request.Project_id,
+		FilterType: shareVar.VULN_IDS,
+		Value:      request.Value,
+	})
 
 	return option
 }

@@ -5,6 +5,7 @@ import (
 	validator2 "github.com/go-playground/validator/v10"
 	cors "github.com/itsjamie/gin-cors"
 	"github.com/joho/godotenv"
+	"math/rand"
 	"os"
 	"sca-integrator/app/config"
 	"sca-integrator/app/middleware"
@@ -28,6 +29,7 @@ func main() {
 	migration.DoMigration(db)
 	validator := validator2.New()
 	shareVar.Logger = config.ConfigLog()
+	rand.Seed(time.Now().UnixNano())
 
 	router := gin.Default()
 	router.Use(middleware.ErrorHandler())

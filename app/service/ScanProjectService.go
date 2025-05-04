@@ -33,8 +33,8 @@ func (p ProjectServiceImpl) scanningRepository(ctx *gin.Context, project entity.
 	p.stdLog.InfoFunction(fmt.Sprintf("START SCANNING REPOSITORY %s", project.Key))
 
 	pathData := p.preparingProjectPath(ctx, project)
-	projectOptionData := p.prepareRunScanAndAction(ctx, project, pathData)
-	p.saveResultToDb(ctx, project, pathData, projectOptionData)
+	p.prepareRunScanAndAction(ctx, project, pathData)
+	p.saveResultToDb(ctx, project, pathData)
 
 	p.stdLog.InfoFunction(fmt.Sprintf("END SCANNING REPOSITORY %s", project.Key))
 }
@@ -162,12 +162,10 @@ func (p ProjectServiceImpl) checkErrorScan(ctx *gin.Context, project entity.Proj
 }
 
 // SAVE RESULT TO DB PHASE
-func (p ProjectServiceImpl) saveResultToDb(ctx *gin.Context, project entity.Project, pathData projectPathInfo, projectOptionData projectOptionInfo) {
+func (p ProjectServiceImpl) saveResultToDb(ctx *gin.Context, project entity.Project, pathData projectPathInfo) {
 	scanVersion := p.incrementScanVersion(ctx, project)
-	severity := 0
-	countVulnerability := 0
 
-	results := p.mappingResultOutput(pathData.scannedProjectFilePath, project.Id)
+	results := p.mappingResultOutput(pathData.scannedProjectFilePath, project.Id, project.Key)
 
 	nothingToChange := p.compareNewResultWithPrevResult(ctx, project.Id, results, scanVersion)
 
@@ -183,40 +181,9 @@ func (p ProjectServiceImpl) saveResultToDb(ctx *gin.Context, project entity.Proj
 	for _, result := range results {
 		resultRule := p.repoResult.GetOneResultByProjectIdAndRuleAndTargetFile(ctx, p.db, project.Id, result.Rule, result.TargetFile)
 		p.addOrUpdateResult(ctx, result, resultRule, scanVersion, pathData.typeVersion)
-
-		if result.StatusResult != 2 {
-			switch result.Severity {
-			case "CRITICAL":
-				severity = severity + 25
-			case "HIGH":
-				severity = severity + 20
-			case "MEDIUM":
-				severity = severity + 15
-			case "LOW":
-				severity = severity + 10
-			case "UNKNOWN":
-				severity = severity + 5
-			default:
-			}
-
-			countVulnerability++
-		}
 	}
 
 	p.deleteAllPrevVersionResult(ctx, project, scanVersion)
-
-	for _, unfixedOpt := range projectOptionData.unfixedOptions {
-		p.insertFilterOption(ctx, project.Id, unfixedOpt.FilterType, "true", scanVersion)
-	}
-	for _, severityOpt := range projectOptionData.severityOptions {
-		p.insertFilterOption(ctx, project.Id, severityOpt.FilterType, severityOpt.Value, scanVersion)
-	}
-
-	vulnOptions := p.repoOption.GetAllByProjectIdAndFilterType(ctx, p.db, project.Id, "Vulnerability IDs")
-
-	for _, vulnOpt := range vulnOptions {
-		p.insertFilterOption(ctx, project.Id, vulnOpt.FilterType, vulnOpt.Value, scanVersion)
-	}
 
 	project.StatusScan = 3
 	//project.StatusMessage = ""
@@ -242,7 +209,7 @@ func (p ProjectServiceImpl) incrementScanVersion(ctx *gin.Context, project entit
 	return scanVersion
 }
 
-func (p ProjectServiceImpl) mappingResultOutput(filePathResult string, projectId int) []entity.Result {
+func (p ProjectServiceImpl) mappingResultOutput(filePathResult string, projectId int, projectKey string) []entity.Result {
 	var data dto.ResultOutputFile
 
 	sourceFile, _ := os.Open(filePathResult)
@@ -259,7 +226,8 @@ func (p ProjectServiceImpl) mappingResultOutput(filePathResult string, projectId
 			tmpResult.TargetFile = result.Target
 			tmpResult.PackagesType = result.Type
 			tmpResult.ProjectId = projectId
-			//tmpResult.PrimaryURL = vulnerability.PrimaryURL
+			tmpResult.ProjectKey = projectKey
+			tmpResult.PrimaryUrl = vulnerability.PrimaryURL
 			tmpResult.Rule = vulnerability.VulnerabilityID
 			tmpResult.PackageName = vulnerability.PkgName
 			tmpResult.InstalledVersion = vulnerability.InstalledVersion
@@ -338,17 +306,6 @@ func (p ProjectServiceImpl) deleteAllPrevVersionResult(ctx *gin.Context, project
 	for _, v := range prevResults {
 		p.repoResult.DeleteOne(ctx, p.db, v)
 	}
-}
-
-func (p ProjectServiceImpl) insertFilterOption(ctx *gin.Context, projectId int, filterType string, value string, scanVersion int) {
-	var option entity.ProjectFilterOption
-
-	option.ProjectId = projectId
-	option.FilterType = filterType
-	option.Value = value
-	option.ScanVersion = scanVersion
-
-	p.repoOption.Create(ctx, p.db, option)
 }
 
 // UTILS SECTION

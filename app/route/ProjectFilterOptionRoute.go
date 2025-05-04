@@ -19,10 +19,10 @@ func OptionRoute(router *gin.RouterGroup, db *gorm.DB, validate *validator.Valid
 	optionController := controller.NewProjectFilterOptionController(optionService)
 
 	router.GET("filter-options", optionController.GetAllHandler)
+	router.GET("filter-options/:projectId", optionController.GetAllByProjectHandler)
 	router.GET("filter-option/:id", optionController.GetDetailByIdHandler)
 	router.POST("filter-option", optionController.CreateOptionHandler)
-	router.PUT("filter-option/:id", optionController.UpdateOptionHandler)
-	router.DELETE("filter-option/:id", optionController.DeleteOptionHandler)
+	router.DELETE("filter-option/:id/project/:projectId", optionController.DeleteOptionHandler)
 
 	return router
 }

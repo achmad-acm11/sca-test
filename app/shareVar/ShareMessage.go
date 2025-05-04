@@ -1,6 +1,9 @@
 package shareVar
 
 const NOT_IMPLEMENTED = "This feature is not implemented currently"
+const HIDE_UNFIXED_VULN = "Hide Unfixed Vulnerabilities"
+const SEVERITY_FILTER_TYPE = "Severity"
+const VULN_IDS = "Vulnerability IDs"
 
 const PROJECT_NOT_FOUND = "Project not found"
 const PROJECT_DELETED = "Project deleted"

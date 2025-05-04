@@ -10,6 +10,7 @@ import (
 
 type FilterOptionRepository interface {
 	GetAll(ctx *gin.Context, db *gorm.DB) []entity.ProjectFilterOption
+	GetAllByProjectId(ctx *gin.Context, db *gorm.DB, projectId int) []entity.ProjectFilterOption
 	Create(ctx *gin.Context, db *gorm.DB, option entity.ProjectFilterOption) entity.ProjectFilterOption
 	Update(ctx *gin.Context, db *gorm.DB, option entity.ProjectFilterOption) entity.ProjectFilterOption
 	GetOneById(ctx *gin.Context, db *gorm.DB, id int) entity.ProjectFilterOption
@@ -30,6 +31,17 @@ func (p FilterOptionRepositoryImpl) GetAll(ctx *gin.Context, db *gorm.DB) []enti
 
 	tx := db.WithContext(ctx)
 	err := tx.Find(&options).Error
+
+	helper.ErrorHandler(err)
+
+	return options
+}
+
+func (p FilterOptionRepositoryImpl) GetAllByProjectId(ctx *gin.Context, db *gorm.DB, projectId int) []entity.ProjectFilterOption {
+	options := []entity.ProjectFilterOption{}
+
+	tx := db.WithContext(ctx)
+	err := tx.Where("project_id = ?", projectId).Find(&options).Error
 
 	helper.ErrorHandler(err)
 
