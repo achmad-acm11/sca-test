@@ -1,0 +1,79 @@
+#!groovy
+
+getEnvHosts = { ->
+    node {
+        script {
+            def props = readProperties file: '/var/lib/jenkins/env/sca-integrator-service-env'
+            //git env
+            env.GIT_URL = props['GIT_URL']
+            env.GIT_DEFAULT_BRANCH = props['GIT_DEFAULT_BRANCH']
+
+            //docker registry
+            env.DOCKER_REGISTRY_URL = props['DOCKER_REGISTRY_URL']
+            env.DOCKER_REGISTRY_NAMESPACE = props['DOCKER_REGISTRY_NAMESPACE']
+            env.DOCKER_IMAGE_NAME = props['DOCKER_IMAGE_NAME']
+
+            env.DIR_DEPLOYMENT = props['DIR_DEPLOYMENT']
+
+            if (props['BUILD_ENVIRONMENT'] == null) {
+                env.BUILD_ENVIRONMENT = 'development'
+            } else {
+                env.BUILD_ENVIRONMENT = props['BUILD_ENVIRONMENT']
+            }
+        }
+    }
+
+}
+getEnvHosts()
+pipeline {
+
+    agent any
+
+    tools {
+        go '1.19.4'
+    }
+    environment {
+        CREDENTIAL_GIT = credentials("GITLAB_ACCOUNT_KASPI")
+    }
+    stages {
+        stage("Checkout ") {
+            steps {
+                checkout([$class: 'GitSCM', branches: [[name: "*/${env.GIT_DEFAULT_BRANCH}"]], extensions: [], userRemoteConfigs: [[url: "${env.GIT_URL}", credentialsId: "GITLAB_ACCOUNT_KASPI"]]])
+            }
+        }
+
+        stage('BUILD IMAGE') {
+            steps {
+                script {
+                    echo "Build with tag latest"
+                    def VAR_TAG_NAME = "latest" as Object
+                    def replacedUrl = env.DOCKER_REGISTRY_URL.replace("https://", "").replace("http://", "")
+                    def VAR_IMAGE_NAME = "${replacedUrl}/${env.DOCKER_REGISTRY_NAMESPACE}/${env.DOCKER_IMAGE_NAME}:${VAR_TAG_NAME}" as Object
+                    docker.withRegistry(env.DOCKER_REGISTRY_URL, "JENKINS_DOCKER_CREDENTIAL_ID") {
+                        echo "Building image ${VAR_IMAGE_NAME}"
+                        dbImage1 = docker.build(VAR_IMAGE_NAME, '.')
+                    }
+                }
+            }
+        }
+
+        stage("INJECT VERSION IN DOCKER COMPOSE") {
+            steps {
+                script {
+                    def READ_ENV_FILE = readProperties file: '/var/lib/jenkins/env/sca-integrator-service-env'
+                    echo "Exporting tag name latest to service.env file"
+                    READ_ENV_FILE.put("IMAGE_TAG", "latest")
+                    writeFile file: '/var/lib/jenkins/env/sca-integrator-service-env', text: READ_ENV_FILE.collect { "${it.key}=${it.value}" }.join("\n")
+                }
+            }
+        }
+
+        stage('DEPLOY APPLICATION') {
+            steps {
+                echo "Deploy application with docker compose"
+                sh "docker compose -f docker-compose.yml up -d"
+            }
+        }
+    }
+}
+
