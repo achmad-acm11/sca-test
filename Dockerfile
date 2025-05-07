@@ -20,8 +20,8 @@ RUN apk add --no-cache bash
 RUN apk add --no-cache git
 COPY --from=trivy-downloader /trivy-binary/trivy ./usr/local/bin/trivy
 RUN chmod 755 /usr/local/bin/trivy
-ADD https://github.com/golang/go/raw/master/lib/time/zoneinfo.zip /zoneinfo.zip
-ENV ZONEINFO /zoneinfo.zip
+# ADD https://github.com/golang/go/raw/master/lib/time/zoneinfo.zip /zoneinfo.zip
+# ENV ZONEINFO /zoneinfo.zip
 WORKDIR /root/
 COPY --from=builder /sca-integrator ./
 #COPY --from=builder /sca-integrator/_public_key.pem ./

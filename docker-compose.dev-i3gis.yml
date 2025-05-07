@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  sca-integrator-svc:
+    image: 10.8.60.32:5000/i3gis-registry/sca-integrator-service:latest
+    container_name: sca-integrator-service
+    restart: always
+    env_file:
+      - /var/lib/jenkins/deployment/.env
+    ports:
+      - '9091:9091'
+    volumes:
+      - "sca_integrator_data:/root/_project-repository/workspace:rw"
+      - "sca-integrator-service-result-files:/root/_scanned-project-files"
+      - "cache_data:/root/.cache/"
+    environment:
+        APP_ENV: "development"
+        DB_HOST: 10.8.60.33
+        DB_USER: postgres
+        DB_PASSWORD: "Redhat12345%21%40%23%24%25"
+        DB_PORT: 5091
+        DB_NAME: "sca_integrator"
+        APP_PORT: "9091"
+        TRIVY_SERVER_URL: "http://trivy-server:8080"
+        TRIVY_TIMEOUT: "5m"
+        PREFIX_PROJECT_FOLDER: "/_project-repository/workspace/"
+        PREFIX_RESULT_FOLDER: "/_scanned-project-files/"
+    networks:
+        - i3gis-net
+networks:
+  i3gis-net:
+    external: true
+volumes:
+  sca_integrator_data:
+  sca-integrator-service-result-files:
+  cache_data:
