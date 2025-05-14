@@ -71,7 +71,7 @@ pipeline {
         stage('DEPLOY APPLICATION') {
             steps {
                 echo "Deploy application with docker compose"
-                sh "docker compose -f docker-compose.yml up -d"
+                sh "docker compose -f docker-compose.dev-i3gis.yml up -d"
             }
         }
     }
