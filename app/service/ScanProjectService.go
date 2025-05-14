@@ -286,12 +286,12 @@ func (p ProjectServiceImpl) checkingNotHaveSameRule(result1 []entity.Result, res
 
 func (p ProjectServiceImpl) addOrUpdateResult(ctx *gin.Context, result entity.Result, oldResult entity.Result, scanVersion int, typeVersion string) {
 	if oldResult.Id != 0 {
-		tmpScanVersion := result.ScanVersion
-		tmpLastUpdate := result.UpdatedAt.Format("2006-01-02 15:04:05")
+		tmpScanVersion := oldResult.ScanVersion
+		tmpLastUpdate := oldResult.UpdatedAt.Format("2006-01-02 15:04:05")
 
-		result.ScanVersion = scanVersion
-		result.StatusResult = 0
-		result.LastFoundAt = fmt.Sprintf("Scan no. %d at %s", tmpScanVersion, tmpLastUpdate)
+		oldResult.ScanVersion = scanVersion
+		oldResult.StatusResult = 0
+		oldResult.LastFoundAt = fmt.Sprintf("Scan no. %d at %s", tmpScanVersion, tmpLastUpdate)
 		p.repoResult.Update(ctx, p.db, result)
 	} else {
 		result.ScanType = typeVersion
